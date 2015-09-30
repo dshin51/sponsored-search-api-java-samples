@@ -1,0 +1,105 @@
+package targetingIdeaSample;
+
+import error.impl.TargetingIdeaServiceErrorEntityFactory;
+import jp.yahooapis.ss.V5.TargetingIdeaService.*;
+import jp.yahooapis.ss.V5.TargetingIdeaService.Error;
+import util.SoapUtils;
+
+import javax.xml.ws.Holder;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Sample Program for TargetingIdeaService. Copyright (C) 2012 Yahoo Japan
+ * Corporation. All Rights Reserved.
+ */
+
+public class TargetingIdeaSample {
+
+
+    /**
+     * main method for TargetingIdeaSample
+     *
+     * @param args
+     *            command line arguments
+     */
+    public static void main(String[] args) {
+        try {
+            //=================================================================
+            // TargetingIdeaService
+            //=================================================================
+            TargetingIdeaServiceInterface targetingIdeaService = SoapUtils.createServiceInterface(TargetingIdeaServiceInterface.class, TargetingIdeaService.class);
+
+            //-----------------------------------------------
+            // TargetingIdeaService::get
+            //-----------------------------------------------
+            //request
+            RelatedToKeywordSearchParameter relateKewyrod = new RelatedToKeywordSearchParameter();
+            relateKewyrod.setSearchParameterUse(SearchParameterUse.RELATED_TO_KEYWORD);
+            ProposalKeyword proposalKeyword1 = new ProposalKeyword();
+            proposalKeyword1.setType(CriterionType.KEYWORD);
+            proposalKeyword1.setText("sample1");
+            proposalKeyword1.setMatchType(KeywordMatchType.PHRASE);
+            relateKewyrod.getKeywords().add(proposalKeyword1);
+
+            ExcludedKeywordSearchParameter excludedKeyword = new ExcludedKeywordSearchParameter();
+            excludedKeyword.setSearchParameterUse(SearchParameterUse.EXCLUDED_KEYWORD);
+            ProposalKeyword proposalKeyword2 = new ProposalKeyword();
+            proposalKeyword2.setType(CriterionType.KEYWORD);
+            proposalKeyword2.setText("sample2");
+            proposalKeyword2.setMatchType(KeywordMatchType.PHRASE);
+            excludedKeyword.getKeywords().add(proposalKeyword2);
+
+            TargetingIdeaSelector targetingIdeaSelector = new TargetingIdeaSelector();
+            targetingIdeaSelector.getSearchParameter().addAll(Arrays.asList(relateKewyrod,excludedKeyword));
+            Paging paging = new Paging();
+            paging.setStartIndex(1);
+            paging.setNumberResults(2);
+            targetingIdeaSelector.setPaging(paging);
+
+            //call API
+            System.out.println("############################################");
+            System.out.println("TargetingIdeaService::get");
+            System.out.println("############################################");
+            Holder<TargetingIdeaPage> targetingIdeaPageHolder = new Holder<TargetingIdeaPage>();
+            Holder<List<Error>> errorArrayHolder = new Holder<List<Error>>();
+            targetingIdeaService.get(targetingIdeaSelector, targetingIdeaPageHolder, errorArrayHolder);
+
+            //if error
+            if(errorArrayHolder.value != null && errorArrayHolder.value.size() > 0){
+                SoapUtils.displayErrors(new TargetingIdeaServiceErrorEntityFactory(errorArrayHolder.value), true);
+            }
+
+            //reponse
+            if(targetingIdeaPageHolder.value != null){
+                for ( TargetingIdeaValues values : targetingIdeaPageHolder.value.getValues()) {
+                    //reponse display
+                    displayTargetingIdea(values);
+                }
+            }
+        } catch (Exception ex) {
+           ex.printStackTrace();
+        }
+    }
+
+    /**
+     * display TargetingIdea entity to stdout.
+     * @param values TargetingIdea entity for display.
+     */
+    private static void displayTargetingIdea(TargetingIdeaValues values) {
+        if(values.getData() != null){
+            System.out.println("data/key = " + values.getData().getKey());
+            Attribute attribute = values.getData().getValue();
+            if(attribute != null){
+                System.out.println("data/value/attributeType = " + attribute.getAttributeType());
+                if(attribute instanceof KeywordAttribute){
+                    KeywordAttribute keywordAttribute = (KeywordAttribute)attribute;
+                    System.out.println("data/value/value/type = " + keywordAttribute.getValue().getType());
+                    System.out.println("data/value/value/text = " + keywordAttribute.getValue().getText());
+                    System.out.println("data/value/value/matchType = " + keywordAttribute.getValue().getMatchType());
+                }
+            }
+        }
+        System.out.println("---------");
+    }
+}
